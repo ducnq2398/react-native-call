@@ -8,7 +8,9 @@ import com.facebook.react.uimanager.ViewManager
 
 class SipcallPackage : ReactPackage {
     override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
-        return listOf(SipcallModule(reactContext))
+      val modules: List<NativeModule> = ArrayList()
+      modules.add(SipCallModule(reactContext))
+      return modules
     }
 
     override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> {
