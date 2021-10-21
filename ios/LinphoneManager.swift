@@ -1,4 +1,5 @@
 import Foundation
+import linphonesw
 
 protocol Callback {
   func send(message: String)
@@ -17,6 +18,16 @@ class LinphoneManager: NSObject {
     private  var loginInfo: NSDictionary?
   
     private static var eventEmitter: SipCall!
+    
+    //new version
+    var lc: Core!
+    var proxy_cfg: ProxyConfig!
+    var call: Call!
+    var mIterateTimer: Timer?
+
+    let coreManager1 = LinphoneCoreManager()
+    let coreManager2 = LinphoneCoreManager2()
+    
   
     public override init() {
       
@@ -160,24 +171,85 @@ class LinphoneManager: NSObject {
         
     
   func initialize() {
-    linphoneLoggingService = linphone_logging_service_get()
-    linphone_logging_service_set_log_level(linphoneLoggingService, LinphoneLogLevelFatal)
-    
-    let config = linphone_config_new_with_factory("", "")
+      // Do any additional setup after loading the view.
+      do {
+          /*
+          Instanciate a LinphoneCore object
+          */
+          lc = try Factory.Instance.createCore(configPath: "", factoryConfigPath: "", systemContext: nil)
+          
+      } catch {
+          print(error)
+      }
+      
+      let log = LoggingService.Instance /*enable liblinphone logs.*/
+      let logManager = LinphoneLoggingServiceManager()
+      log.addDelegate(delegate: logManager)
+      let factory = Factory.Instance
+      do {
+          lc.addDelegate(delegate: coreManager1)
+          try! lc.start()
+          /*create proxy config*/
+          proxy_cfg = try lc.createProxyConfig()
+          /*parse identity*/
+          let from = try factory.createAddress(addr: "sip:101@42.112.25.68:5082")
   
-    let factory = linphone_factory_get()
-    let callBacks = linphone_factory_create_core_cbs(factory)
-    linphone_core_cbs_set_registration_state_changed(callBacks, registrationStateChanged)
-    linphone_core_cbs_set_call_state_changed(callBacks, callStateChanged)
-    
-    linphoneCore = linphone_factory_create_core_with_config_3(factory, config, nil)
-    linphone_core_add_callbacks(linphoneCore, callBacks)
-    linphone_core_start(linphoneCore)
+          let info = try factory.createAuthInfo(username: from.username, userid: "", passwd: "Dv6xrjtB1C?5", ha1: "", realm: "", domain: "") /*create authentication structure from identity*/
+          lc!.addAuthInfo(info: info) /*add authentication info to LinphoneCore*/
 
-    linphone_core_cbs_unref(callBacks)
-    linphone_config_unref(config)
+          // configure proxy entries
+          try proxy_cfg.setIdentityaddress(newValue: from) /*set identity with user name and domain*/
+          let server_addr = "42.112.25.68:5082" /*extract domain address from identity*/
+          try proxy_cfg.setServeraddr(newValue: server_addr) /* we assume domain = proxy server address*/
+          proxy_cfg.registerEnabled = true /*activate registration for this proxy config*/
+          
+          try lc.addProxyConfig(config: proxy_cfg!) /*add proxy config to linphone core*/
+          lc.defaultProxyConfig = proxy_cfg /*set to default proxy*/
+          
+    
+          /* main loop for receiving notifications and doing background linphonecore work: */
+          startIterateTimer()
+      } catch {
+          print(error)
+          end()
+      }
+      
+      ///
+//    linphoneLoggingService = linphone_logging_service_get()
+//    linphone_logging_service_set_log_level(linphoneLoggingService, LinphoneLogLevelFatal)
+//
+//    let config = linphone_config_new_with_factory("", "")
+//
+//    let factory = linphone_factory_get()
+//    let callBacks = linphone_factory_create_core_cbs(factory)
+//    linphone_core_cbs_set_registration_state_changed(callBacks, registrationStateChanged)
+//    linphone_core_cbs_set_call_state_changed(callBacks, callStateChanged)
+//
+//    linphoneCore = linphone_factory_create_core_with_config_3(factory, config, nil)
+//    linphone_core_add_callbacks(linphoneCore, callBacks)
+//    linphone_core_start(linphoneCore)
+//
+//    linphone_core_cbs_unref(callBacks)
+//    linphone_config_unref(config)
 
     }
+    
+    func end() {
+        print("Shutting down...\n")
+        print("Exited\n")
+    }
+
+    
+    func startIterateTimer() {
+        if (mIterateTimer?.isValid ?? false) {
+            print("Iterate timer is already started, skipping ...")
+            return
+        }
+        mIterateTimer = Timer.scheduledTimer(timeInterval: 0.02, target: self, selector: #selector(self.iterate), userInfo: nil, repeats: true)
+        print("start iterate timer")
+
+    }
+
     
     fileprivate func bundleFile(_ name: String, _ ext: String? = nil) -> String? {
         return Bundle.main.path(forResource: name, ofType: ext)
@@ -207,19 +279,42 @@ class LinphoneManager: NSObject {
     }
   
   func call(phone_number: String, user_id: String, call_id: String) {
-    guard let _ = setIdentify() else {
-        print("no identity")
-        return;
-    }
-      
-    let address = linphone_core_interpret_url(linphoneCore, phone_number)
-    let params = linphone_core_create_call_params(linphoneCore, nil)
-    linphone_call_params_add_custom_header(params, "X-Call-Id", call_id)
-    linphone_call_params_add_custom_header(params, "X-User-Id", user_id)
-  
-    linphone_core_invite_address_with_params(linphoneCore, address, params)
+//    guard let _ = setIdentify() else {
+//        print("no identity")
+//        return;
+//    }
+//
+//    let address = linphone_core_interpret_url(linphoneCore, phone_number)
+//    let params = linphone_core_create_call_params(linphoneCore, nil)
+//    linphone_call_params_add_custom_header(params, "X-Call-Id", call_id)
+//    linphone_call_params_add_custom_header(params, "X-User-Id", user_id)
+//
+//    linphone_core_invite_address_with_params(linphoneCore, address, params)
+//
+//    setTimer()
+let log = LoggingService.Instance /*enable liblinphone logs.*/
+let logManager = LinphoneLoggingServiceManager()
+log.addDelegate(delegate: logManager)
+log.logLevel = LogLevel.Debug
+Factory.Instance.enableLogCollection(state: LogCollectionState.Enabled)
+
+
+lc.addDelegate(delegate: coreManager2)
+//        try! lc.start()
     
-    setTimer()
+
+    /*
+    Place an outgoing call
+    */
+    call = lc.invite(url: "0898572528")
+    if (call == nil) {
+        print("Could not place call to")
+//        end()
+    } else {
+        print("Call to  ) is in progress...")
+    }
+
+startIterateTimer()
   }
     
     func makeCall(){
@@ -353,4 +448,41 @@ class LinphoneManager: NSObject {
         type(of: self).iterateTimer = Timer.scheduledTimer (
             timeInterval: 0.02, target: self, selector: #selector(iterate), userInfo: nil, repeats: true)
     }
+}
+
+
+class LinphoneCoreManager: CoreDelegate {
+    override func onRegistrationStateChanged(lc: Core, cfg: ProxyConfig, cstate: RegistrationState, message: String?) {
+        print("New registration state \(cstate) for user id \( String(describing: cfg.identityAddress?.asString()))\n")
+    }
+}
+
+
+class LinphoneLoggingServiceManager: LoggingServiceDelegate {
+    override func onLogMessageWritten(logService: LoggingService, domain: String, lev: LogLevel, message: String) {
+        print("Logging service log: \(message)s\n")
+    }
+}
+
+class LinphoneCoreManager2: CoreDelegate {
+    override func onCallStateChanged(lc: Core, call: Call, cstate: Call.State, message: String) {
+        switch cstate {
+        case .OutgoingRinging:
+            print("It is now ringing remotely !\n")
+        case .OutgoingEarlyMedia:
+            print("Receiving some early media\n")
+        case .Connected:
+            print("We are connected !\n")
+        case .StreamsRunning:
+            print("Media streams established !\n")
+        case .End:
+            print("Call is terminated.\n")
+        case .Error:
+            print("Call failure !")
+        default:
+            print("Unhandled notification \(cstate)\n")
+        }
+    }
+    
+    
 }

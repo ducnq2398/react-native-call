@@ -3,6 +3,10 @@ import Foundation
 
 @objc(SipCall)
 class SipCall : RCTEventEmitter {
+    
+    @objc override static func requiresMainQueueSetup() -> Bool {
+        return false
+    }
   
   override func supportedEvents() -> [String]! {
       return ["SipCall"]
@@ -12,6 +16,7 @@ class SipCall : RCTEventEmitter {
   
   @objc func initialize() {
     DispatchQueue.main.async {
+        LinphoneManager.shared
       LinphoneManager.shared.registerEventEmitter(eventEmitter: self)
       LinphoneManager.shared.initialize()
 //      LinphoneManager.shared.demo()

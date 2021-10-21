@@ -11,9 +11,10 @@ Pod::Spec.new do |s|
   s.authors      = package["author"]
 
   s.platforms    = { :ios => "10.0" }
-  s.source       = { :git => "https://gitlab.com/ducnvtima/sipcall-tima.git.git", :tag => "#{s.version}" }
+  s.source       = { :git => "https://gitlab.com/ducnvtima/sipcall-tima.git", :tag => "#{s.version}" }
 
   s.source_files = "ios/**/*.{h,m,mm,swift}"
 
   s.dependency "React-Core"
+  s.dependency 'linphone-sdk', '~> 4.4.0-beta'
 end

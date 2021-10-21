@@ -1,18 +1,45 @@
 import * as React from 'react';
 
-import { StyleSheet, View, Text } from 'react-native';
+import {StyleSheet, View, Text, Button, TouchableOpacity} from 'react-native';
 import Sipcall from 'react-native-sipcall';
 
 export default function App() {
-  const [result, setResult] = React.useState<number | undefined>();
+  const sipCall = new Sipcall();
 
   React.useEffect(() => {
-    Sipcall.multiply(3, 7).then(setResult);
+
+    // sipCall.login("110", "BKMB!eq8aHQ9", '42.112.25.68:5082');
+    // sipCall.addListener((event: any) =>{
+    //   console.log(event)
+    // });
+
+
   }, []);
+  const call = ()=>{
+    sipCall.call(
+      "0898572528",
+      "",
+      "101",
+    );
+  }
+  const init = ()=>{
+    sipCall.ide();
+  }
 
   return (
     <View style={styles.container}>
-      <Text>Result: {result}</Text>
+      <TouchableOpacity
+        style={{padding: 16}}
+        onPress={init}
+      >
+        <Text>init</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={{padding: 16}}
+        onPress={call}
+      >
+        <Text>call</Text>
+      </TouchableOpacity>
     </View>
   );
 }

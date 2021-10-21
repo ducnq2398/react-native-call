@@ -1,12 +1,11 @@
-import {NativeModules, NativeEventEmitter, Platform} from 'react-native';
+import { NativeModules, NativeEventEmitter, Platform } from 'react-native';
 
 class SipCall {
-
   constructor() {}
 
-  addListener(callback?) {
+  addListener(callback: any) {
     const eventEmitter = new NativeEventEmitter(NativeModules.SipCall);
-    eventEmitter.addListener('SipCall', event => {
+    eventEmitter.addListener('SipCall', (event) => {
       console.log(event);
       callback(event);
       // if (event === 'RegistrationState.Ok' && this.registerSuccess) {
@@ -21,8 +20,7 @@ class SipCall {
     }
   }
 
-  login(username, password, domain, registerSuccess) {
-    this.registerSuccess = registerSuccess;
+  login(username: string, password: string, domain: string) {
     if (Platform.OS === 'ios') {
       NativeModules.SipCall.login({
         username: username,
@@ -34,7 +32,7 @@ class SipCall {
     }
   }
 
-  call(phoneNumber, callId, userId) {
+  call(phoneNumber: string, callId: string, userId: string) {
     if (Platform.OS === 'ios') {
       NativeModules.SipCall.call({
         phoneNumber: phoneNumber,
