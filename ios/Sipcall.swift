@@ -4,9 +4,6 @@ import Foundation
 @objc(SipCall)
 class SipCall : RCTEventEmitter {
     
-    @objc override static func requiresMainQueueSetup() -> Bool {
-        return false
-    }
   
   override func supportedEvents() -> [String]! {
       return ["SipCall"]
@@ -16,7 +13,6 @@ class SipCall : RCTEventEmitter {
   
   @objc func initialize() {
     DispatchQueue.main.async {
-        LinphoneManager.shared
       LinphoneManager.shared.registerEventEmitter(eventEmitter: self)
       LinphoneManager.shared.initialize()
 //      LinphoneManager.shared.demo()
@@ -28,14 +24,11 @@ class SipCall : RCTEventEmitter {
   
   // Reference to use main thread
   @objc func login(_ options: NSDictionary) -> Void {
-    print("login: %s %s %s", options["username"], options["password"], options["domain"])
-
-    let username = options["username"] as! String
-    let password = options["password"] as! String
-    let domain = options["domain"] as! String
-
-//    let identity = "sip:" + username + "@" + domain
     DispatchQueue.main.async {
+        let username = options["username"] as! String
+        let password = options["password"] as! String
+        let domain = options["domain"] as! String
+
       LinphoneManager.shared.login(username: username, password: password, domain: domain)
     }
   }
@@ -49,10 +42,10 @@ class SipCall : RCTEventEmitter {
   }
   
   @objc func call(_ options: NSDictionary) -> Void {
-    let phoneNumber = options["phoneNumber"] as! String
-    let callId = options["callId"] as! String
-    let userId = options["userId"] as! String
     DispatchQueue.main.async {
+        let phoneNumber = options["phoneNumber"] as! String
+        let callId = options["callId"] as! String
+        let userId = options["userId"] as! String
       LinphoneManager.shared.call(phone_number: phoneNumber, user_id: userId, call_id: callId)
     }
   }
