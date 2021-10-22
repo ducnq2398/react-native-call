@@ -1,43 +1,37 @@
 import * as React from 'react';
 
-import {StyleSheet, View, Text, Button, TouchableOpacity} from 'react-native';
-import Sipcall from 'react-native-sipcall';
+import {
+  StyleSheet,
+  View,
+  Text,
+  Button,
+  TouchableOpacity,
+  Animated,
+} from 'react-native';
+import sipCallStore from './SipCallStore';
 
 export default function App() {
-  const sipCall = new Sipcall();
-
   React.useEffect(() => {
-
-    // sipCall.login("110", "BKMB!eq8aHQ9", '42.112.25.68:5082');
-    // sipCall.addListener((event: any) =>{
-    //   console.log(event)
+    // sipCall.addListener((event: any) => {
+    //   console.log(event);
     // });
-
-
   }, []);
-  const call = ()=>{
-    sipCall.call(
-      "0898572528",
-      "",
-      "101",
-    );
-  }
-  const init = ()=>{
-    sipCall.ide();
-  }
+  const call = () => {
+    sipCallStore.sipCall.call('0898572528', '', '101');
+  };
+  const init = () => {
+    sipCallStore.init((event: any) => {
+      console.log(event);
+    });
+    sipCallStore.sipCall.login('110', 'BKMB!eq8aHQ9', '42.112.25.68:5082');
+  };
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        style={{padding: 16}}
-        onPress={init}
-      >
+      <TouchableOpacity style={{ padding: 16 }} onPress={init}>
         <Text>init</Text>
       </TouchableOpacity>
-      <TouchableOpacity
-        style={{padding: 16}}
-        onPress={call}
-      >
+      <TouchableOpacity style={{ padding: 16 }} onPress={call}>
         <Text>call</Text>
       </TouchableOpacity>
     </View>

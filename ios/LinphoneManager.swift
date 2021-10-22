@@ -2,13 +2,13 @@ import Foundation
 import linphonesw
 
 protocol Callback {
-  func send(message: String)
+    func send(message: String)
 }
 
 class LinphoneManager: NSObject {
-   
-  
-    static let shared = LinphoneManager()
+    
+    
+    public static let shared = LinphoneManager()
     
     private var linphoneCore: OpaquePointer?
     private var linphoneLoggingService: OpaquePointer?
@@ -16,229 +16,66 @@ class LinphoneManager: NSObject {
     private var configLinphone: OpaquePointer?
     private var currentCall: OpaquePointer?
     private  var loginInfo: NSDictionary?
-  
+    
     private static var eventEmitter: SipCall!
     
-    //new version
+
+    public override init() {
+        
+    }
+    
+    func registerEventEmitter(eventEmitter: SipCall) {
+        LinphoneManager.eventEmitter = eventEmitter
+    }
+    
+    func dispatch(message: String) {
+        LinphoneManager.eventEmitter.sendEvent(withName: "SipCall", body: message)
+    }
+    
+    /// All Events which must be support by React Native.
+    lazy var allEvents: [String] = {
+        var allEventNames: [String] = []
+        
+        // Append all events here
+        
+        return allEventNames
+    }()
+    
+    
     var lc: Core!
     var proxy_cfg: ProxyConfig!
     var call: Call!
     var mIterateTimer: Timer?
-
+    
     let coreManager1 = LinphoneCoreManager()
     let coreManager2 = LinphoneCoreManager2()
     
-  
-    public override init() {
-      
-    }
-    func registerEventEmitter(eventEmitter: SipCall) {
-      LinphoneManager.eventEmitter = eventEmitter
-    }
-  
-      func dispatch(message: String) {
-        LinphoneManager.eventEmitter.sendEvent(withName: "SipCall", body: message)
-      }
+    
+    
+    func initialize() {
+        print("initialize")
+        
+        do {
+            if lc == nil {
+                lc = try Factory.Instance.createCore(configPath: "", factoryConfigPath: "", systemContext: nil)
+            }
 
-      /// All Events which must be support by React Native.
-      lazy var allEvents: [String] = {
-          var allEventNames: [String] = []
-
-          // Append all events here
-          
-          return allEventNames
-      }()
-
-  
-
-    private let registrationStateChanged: LinphoneCoreRegistrationStateChangedCb  = {
-        (lc: Optional<OpaquePointer>, proxyConfig: Optional<OpaquePointer>, state: LinphoneRegistrationState, message: Optional<UnsafePointer<Int8>>) in
-
-        LinphoneManager.shared.registrationStateChanged(lc: lc, proxyConfig: proxyConfig, state: state, message: message)
-    } as LinphoneCoreRegistrationStateChangedCb
-
-    private let callStateChanged: LinphoneCoreCallStateChangedCb = {
-        (lc: Optional<OpaquePointer>, call: Optional<OpaquePointer>, state: LinphoneCallState,  message: Optional<UnsafePointer<Int8>>) in
-
-        LinphoneManager.shared.callStateChanged(lc: lc, call: call, state: state, message: message)
-    }
-
-    private func registrationStateChanged(lc: Optional<OpaquePointer>, proxyConfig: Optional<OpaquePointer>, state: LinphoneRegistrationState, message: Optional<UnsafePointer<Int8>>) {
-        var stateMessage = ""
-        if let message = message {
-            stateMessage = String(cString: message)
+        } catch {
+            print(error)
         }
         
-        switch state{
-        case LinphoneRegistrationNone:
-            print("registrationStateChanged -> LinphoneRegistrationNone -> \(stateMessage)")
-          dispatch(message: "RegistrationState.None")
-        case LinphoneRegistrationProgress:
-            print("registrationStateChanged -> LinphoneRegistrationProgress -> \(stateMessage)")
-          dispatch(message: "RegistrationState.Progress")
-        case LinphoneRegistrationOk:
-            print("registrationStateChanged -> LinphoneRegistrationOk -> \(stateMessage)")
-          dispatch(message: "RegistrationState.Ok")
-        case LinphoneRegistrationCleared:
-            print("registrationStateChanged -> LinphoneRegistrationCleared -> \(stateMessage)")
-          dispatch(message: "RegistrationState.Cleared")
-        case LinphoneRegistrationFailed:
-            print("registrationStateChanged -> LinphoneRegistrationFailed -> \(stateMessage)")
-          dispatch(message: "RegistrationState.Failed")
-        default:
-            return
-        }
-    }
-    
-    private func callStateChanged(lc: Optional<OpaquePointer>, call: Optional<OpaquePointer>, state: LinphoneCallState,  message: Optional<UnsafePointer<Int8>>) {
-        var stateMessage = ""
-        if let message = message {
-            stateMessage = String(cString: message)
-        }
-        switch state {
-        case LinphoneCallStateIdle:
-            print("callStateChanged -> LinphoneCallStateIdle -> \(stateMessage)")
-          dispatch(message: "Call.State.Idle")
-        case LinphoneCallStateIncomingReceived:
-            print("callStateChanged -> LinphoneCallStateIncomingReceived -> \(stateMessage)")
-            currentCall = call
-//            ms_usleep(3 * 1000 * 1000); // Wait 3 seconds to pickup
-//            linphone_call_accept(call)
-          
-          dispatch(message: "Call.State.IncomingReceived")
-        case LinphoneCallStateOutgoingInit:
-            print("callStateChanged -> LinphoneCallStateOutgoingInit -> \(stateMessage)")
-          dispatch(message: "Call.State.OutgoingInit")
-        case LinphoneCallStateOutgoingProgress:
-            print("callStateChanged -> LinphoneCallStateOutgoingProgress -> \(stateMessage)")
-          dispatch(message: "Call.State.OutgoingProgress")
-        case LinphoneCallStateOutgoingRinging:
-            print("callStateChanged -> LinphoneCallStateOutgoingRinging -> \(stateMessage)")
-          dispatch(message: "Call.State.OutgoingRinging")
-        case LinphoneCallStateOutgoingEarlyMedia:
-            print("callStateChanged -> LinphoneCallStateOutgoingEarlyMedia -> \(stateMessage)")
-          dispatch(message: "Call.State.OutgoingEarlyMedia")
-        case LinphoneCallStateConnected:
-            print("callStateChanged -> LinphoneCallStateConnected -> \(stateMessage)")
-          dispatch(message: "Call.State.Connected")
-        case LinphoneCallStateStreamsRunning:
-            print("callStateChanged -> LinphoneCallStateStreamsRunning -> \(stateMessage)")
-          dispatch(message: "Call.State.StreamsRunning")
-        case LinphoneCallStatePausing:
-            print("callStateChanged -> LinphoneCallStatePausing -> \(stateMessage)")
-          dispatch(message: "Call.State.Pausing")
-        case LinphoneCallStatePaused:
-            print("callStateChanged -> LinphoneCallStatePaused -> \(stateMessage)")
-          dispatch(message: "Call.State.Paused")
-        case LinphoneCallStateResuming:
-            print("callStateChanged -> LinphoneCallStateResuming -> \(stateMessage)")
-          dispatch(message: "Call.State.Resuming")
-        case LinphoneCallStateReferred:
-            print("callStateChanged -> LinphoneCallStateReferred -> \(stateMessage)")
-          dispatch(message: "Call.State.Referred")
-        case LinphoneCallStateError:
-            print("callStateChanged -> LinphoneCallStateError -> \(stateMessage)")
-          dispatch(message: "Call.State.Error")
-        case LinphoneCallStateEnd:
-            print("callStateChanged -> LinphoneCallStateEnd -> \(stateMessage)")
-          dispatch(message: "Call.State.End")
-        case LinphoneCallStatePausedByRemote:
-            print("callStateChanged -> LinphoneCallStatePausedByRemote -> \(stateMessage)")
-          dispatch(message: "Call.State.PausedByRemote")
-        case LinphoneCallStateUpdatedByRemote:
-            print("callStateChanged -> LinphoneCallStateUpdatedByRemote -> \(stateMessage)")
-          dispatch(message: "Call.State.UpdatedByRemote")
-        case LinphoneCallStateIncomingEarlyMedia:
-            print("callStateChanged -> LinphoneCallStateIncomingEarlyMedia -> \(stateMessage)")
-          dispatch(message: "Call.State.IncomingEarlyMedia")
-        case LinphoneCallStateUpdating:
-            print("callStateChanged -> LinphoneCallStateUpdating -> \(stateMessage)")
-          dispatch(message: "Call.State.Updating")
-        case LinphoneCallStateReleased:
-            print("callStateChanged -> LinphoneCallStateReleased -> \(stateMessage)")
-          dispatch(message: "Call.State.Released")
-        case LinphoneCallStateEarlyUpdatedByRemote:
-            print("callStateChanged -> LinphoneCallStateEarlyUpdatedByRemote -> \(stateMessage)")
-          dispatch(message: "Call.State.EarlyUpdatedByRemote")
-        case LinphoneCallStateEarlyUpdating:
-            print("callStateChanged -> LinphoneCallStateEarlyUpdating -> \(stateMessage)")
-          dispatch(message: "Call.State.EarlyUpdating")
-        default:
-            return
-        }
-    }
-  
         
-    
-  func initialize() {
-      // Do any additional setup after loading the view.
-      do {
-          /*
-          Instanciate a LinphoneCore object
-          */
-          lc = try Factory.Instance.createCore(configPath: "", factoryConfigPath: "", systemContext: nil)
-          
-      } catch {
-          print(error)
-      }
-      
-      let log = LoggingService.Instance /*enable liblinphone logs.*/
-      let logManager = LinphoneLoggingServiceManager()
-      log.addDelegate(delegate: logManager)
-      let factory = Factory.Instance
-      do {
-          lc.addDelegate(delegate: coreManager1)
-          try! lc.start()
-          /*create proxy config*/
-          proxy_cfg = try lc.createProxyConfig()
-          /*parse identity*/
-          let from = try factory.createAddress(addr: "sip:101@42.112.25.68:5082")
-  
-          let info = try factory.createAuthInfo(username: from.username, userid: "", passwd: "Dv6xrjtB1C?5", ha1: "", realm: "", domain: "") /*create authentication structure from identity*/
-          lc!.addAuthInfo(info: info) /*add authentication info to LinphoneCore*/
-
-          // configure proxy entries
-          try proxy_cfg.setIdentityaddress(newValue: from) /*set identity with user name and domain*/
-          let server_addr = "42.112.25.68:5082" /*extract domain address from identity*/
-          try proxy_cfg.setServeraddr(newValue: server_addr) /* we assume domain = proxy server address*/
-          proxy_cfg.registerEnabled = true /*activate registration for this proxy config*/
-          
-          try lc.addProxyConfig(config: proxy_cfg!) /*add proxy config to linphone core*/
-          lc.defaultProxyConfig = proxy_cfg /*set to default proxy*/
-          
-    
-          /* main loop for receiving notifications and doing background linphonecore work: */
-          startIterateTimer()
-      } catch {
-          print(error)
-          end()
-      }
-      
-      ///
-//    linphoneLoggingService = linphone_logging_service_get()
-//    linphone_logging_service_set_log_level(linphoneLoggingService, LinphoneLogLevelFatal)
-//
-//    let config = linphone_config_new_with_factory("", "")
-//
-//    let factory = linphone_factory_get()
-//    let callBacks = linphone_factory_create_core_cbs(factory)
-//    linphone_core_cbs_set_registration_state_changed(callBacks, registrationStateChanged)
-//    linphone_core_cbs_set_call_state_changed(callBacks, callStateChanged)
-//
-//    linphoneCore = linphone_factory_create_core_with_config_3(factory, config, nil)
-//    linphone_core_add_callbacks(linphoneCore, callBacks)
-//    linphone_core_start(linphoneCore)
-//
-//    linphone_core_cbs_unref(callBacks)
-//    linphone_config_unref(config)
-
     }
     
     func end() {
         print("Shutting down...\n")
         print("Exited\n")
     }
-
+    
+    
+    @objc func iterate() {
+        lc.iterate()
+    }
     
     func startIterateTimer() {
         if (mIterateTimer?.isValid ?? false) {
@@ -247,9 +84,16 @@ class LinphoneManager: NSObject {
         }
         mIterateTimer = Timer.scheduledTimer(timeInterval: 0.02, target: self, selector: #selector(self.iterate), userInfo: nil, repeats: true)
         print("start iterate timer")
-
+        
     }
-
+    
+    func stopIterateTimer() {
+        if let timer = mIterateTimer {
+            print("stop iterate timer")
+            timer.invalidate()
+        }
+    }
+    
     
     fileprivate func bundleFile(_ name: String, _ ext: String? = nil) -> String? {
         return Bundle.main.path(forResource: name, ofType: ext)
@@ -262,201 +106,157 @@ class LinphoneManager: NSObject {
         return documentsPath.appendingPathComponent(file as String) as NSString
     }
     
-    func demo() {
-        makeCall()
-//        receiveCall()
-        idle()
-    }
-  
     func login(username: String, password: String, domain: String) {
-    
-      loginInfo = ["username": username, "password": password, "domain": domain]
-      guard let _ = setIdentify() else {
-          print("no identity")
-          return;
-      }
-      idle()
-    }
-  
-  func call(phone_number: String, user_id: String, call_id: String) {
-//    guard let _ = setIdentify() else {
-//        print("no identity")
-//        return;
-//    }
-//
-//    let address = linphone_core_interpret_url(linphoneCore, phone_number)
-//    let params = linphone_core_create_call_params(linphoneCore, nil)
-//    linphone_call_params_add_custom_header(params, "X-Call-Id", call_id)
-//    linphone_call_params_add_custom_header(params, "X-User-Id", user_id)
-//
-//    linphone_core_invite_address_with_params(linphoneCore, address, params)
-//
-//    setTimer()
-let log = LoggingService.Instance /*enable liblinphone logs.*/
-let logManager = LinphoneLoggingServiceManager()
-log.addDelegate(delegate: logManager)
-log.logLevel = LogLevel.Debug
-Factory.Instance.enableLogCollection(state: LogCollectionState.Enabled)
-
-
-lc.addDelegate(delegate: coreManager2)
-//        try! lc.start()
-    
-
-    /*
-    Place an outgoing call
-    */
-    call = lc.invite(url: "0898572528")
-    if (call == nil) {
-        print("Could not place call to")
-//        end()
-    } else {
-        print("Call to  ) is in progress...")
-    }
-
-startIterateTimer()
-  }
-    
-    func makeCall(){
-        let calleeAccount = "0898572528"
+        print("login")
+        loginInfo = ["username": username, "password": password, "domain": domain]
         
-        guard let _ = setIdentify() else {
-            print("no identity")
-            return;
-        }
-        linphone_event_add_custom_header(linphoneCore, "X-Call-Id", "2bfcf300-6756-4447-b775-57cd3e284458")
-        linphone_event_add_custom_header(linphoneCore, "X-User-Id", "111")
-        linphone_core_invite(linphoneCore, calleeAccount)
-        setTimer()
-    }
-  
-  func accept() {
-    linphone_call_accept(currentCall)
-  }
-  
-  func endCall() {
-      linphone_core_terminate_all_calls(linphoneCore)
-  }
-  
-  func logout() {
-    type(of: self).iterateTimer = nil
-
-    guard let linphoneCore = linphoneCore else { return } // just in case application terminate before linphone core initialization
-    
-    let config = linphone_core_get_default_proxy_config(linphoneCore)
-    linphone_proxy_config_edit(config)
-    linphone_proxy_config_enable_register(config, 0)
-    linphone_proxy_config_done(config)
-    
-    while(linphone_proxy_config_get_state(config) != LinphoneRegistrationCleared) {
-        linphone_core_iterate(linphoneCore)
-        ms_usleep(50000);
-    }
-    
-    linphone_core_unref(linphoneCore)
-  }
-    
-    func receiveCall(){
-        guard let proxyConfig = setIdentify() else {
-            print("no identity")
-            return;
-        }
-        register(proxyConfig)
-        setTimer()
-    }
-    
-    func idle(){
-        guard let proxyConfig = setIdentify() else {
-            print("no identity")
-            return;
-        }
-        register(proxyConfig)
-        setTimer()
-    }
-    
-    func setIdentify() -> OpaquePointer? {
-
-        let username = loginInfo?["username"] as! String
-        let password = loginInfo?["password"] as! String
-        let domain = loginInfo?["domain"] as! String
-
-        
-        let identity = "sip:" + username + "@" + domain
+        let factory = Factory.Instance
+        do {
+            lc.addDelegate(delegate: coreManager1)
             
-        guard let temp_address = linphone_address_new(identity) else {
-            print("\(identity) not a valid sip uri, must be like sip:toto@sip.linphone.org")
-            return nil
-        }
-
-        let address = linphone_address_new(nil)
-        linphone_address_set_username(address, linphone_address_get_username(temp_address))
-        linphone_address_set_domain(address, linphone_address_get_domain(temp_address))
-        linphone_address_set_port(address, linphone_address_get_port(temp_address))
-        linphone_address_set_transport(address, linphone_address_get_transport(temp_address))
-        
-        let config = linphone_core_create_proxy_config(linphoneCore)
-        linphone_proxy_config_set_identity_address(config, address)
-        linphone_proxy_config_set_route(config, "\(domain)")
-        linphone_proxy_config_set_server_addr(config, "\(domain)")
-        linphone_proxy_config_enable_register(config, 0)
-        linphone_proxy_config_enable_publish(config, 0)
-                
-        linphone_core_add_proxy_config(linphoneCore, config)
-        linphone_core_set_default_proxy_config(linphoneCore, config)
-        
-        let info = linphone_auth_info_new(username, nil, password, nil, nil, nil)
-        linphone_core_add_auth_info(linphoneCore, info)
-        
-        linphone_proxy_config_unref(config)
-        linphone_auth_info_unref(info)
-        linphone_address_unref(address)
-        
-        return config
-    }
-    
-    func register(_ proxy_cfg: OpaquePointer){
-        linphone_proxy_config_enable_register(proxy_cfg, 1); /* activate registration for this proxy config*/
-    }
-    
-    func shutdown(){
-        print("Shutdown..")
-        
-        type(of: self).iterateTimer = nil
-
-        guard let linphoneCore = linphoneCore else { return } // just in case application terminate before linphone core initialization
-        
-        let config = linphone_core_get_default_proxy_config(linphoneCore)
-        linphone_proxy_config_edit(config)
-        linphone_proxy_config_enable_register(config, 0)
-        linphone_proxy_config_done(config)
-        
-        while(linphone_proxy_config_get_state(config) != LinphoneRegistrationCleared) {
-            linphone_core_iterate(linphoneCore)
-            ms_usleep(50000);
-        }
-        
-        linphone_core_unref(linphoneCore)
-    }
-    
-    @objc private func iterate(){
-        if let linphoneCore = linphoneCore {
-            linphone_core_iterate(linphoneCore); /* first iterate initiates registration */
+            
+            try! lc.start()
+            /*create proxy config*/
+            proxy_cfg = try lc.createProxyConfig()
+            /*parse identity*/
+            let from = try factory.createAddress(addr: "sip:"+username+"@"+domain)
+            
+            let info = try factory.createAuthInfo(username: from.username, userid: "", passwd: password, ha1: "", realm: "", domain: "") /*create authentication structure from identity*/
+            lc!.addAuthInfo(info: info) /*add authentication info to LinphoneCore*/
+            
+            // configure proxy entries
+            try proxy_cfg.setIdentityaddress(newValue: from) /*set identity with user name and domain*/
+            let server_addr = domain /*extract domain address from identity*/
+            try proxy_cfg.setServeraddr(newValue: server_addr) /* we assume domain = proxy server address*/
+            proxy_cfg.registerEnabled = true /*activate registration for this proxy config*/
+            
+            try lc.addProxyConfig(config: proxy_cfg!) /*add proxy config to linphone core*/
+            lc.defaultProxyConfig = proxy_cfg /*set to default proxy*/
+            
+            
+            /* main loop for receiving notifications and doing background linphonecore work: */
+            startIterateTimer()
+        } catch {
+            print(error)
+            end()
         }
     }
+    
+    func call(phone_number: String, user_id: String, call_id: String) {
+        
+        let log = LoggingService.Instance /*enable liblinphone logs.*/
+        let logManager = LinphoneLoggingServiceManager()
+        log.addDelegate(delegate: logManager)
+        log.logLevel = LogLevel.Debug
+        Factory.Instance.enableLogCollection(state: LogCollectionState.Enabled)
+        
+        
+        lc.addDelegate(delegate: coreManager2)
+        
+        
+        
+        let addressToCall: Address = lc.interpretUrl(url: phone_number)!
+        let params: CallParams? = try! lc.createCallParams(call: nil)
+        params?.audioEnabled = true
+        
+        params?.addCustomHeader(headerName: "X-Call-Id", headerValue: call_id)
+        params?.addCustomHeader(headerName: "X-User-Id", headerValue: user_id)
+        
+        
+        /*
+         Place an outgoing call
+         */
+        call = lc.inviteAddressWithParams(addr: addressToCall, params: params!)
+        //      call = lc.invite(url: phone_number)
+        if (call == nil) {
+            print("Could not place call to )\n")
+            end()
+        } else {
+            print("Call to  ) is in progress...")
+        }
+        
+        
+        startIterateTimer()
+    }
+    
+    
+    
+    func accept() {
+        do{
+            try lc.currentCall?.accept()
+        } catch {
+            print(error)
+            end()
+        }
+    }
+    
+    func endCall() {
+        stopIterateTimer()
+        if (self.call != nil && self.call!.state != Call.State.End){
+            /* terminate the call */
+            print("Terminating the call...\n")
+            do {
+                try self.call?.terminate()
+            } catch {
+                print(error)
+            }
+        }
+        
+        self.lc.removeDelegate(delegate: self.coreManager2)
+        self.lc.stop()
+        end()
+    }
+    
+    func logout() {
+        stopIterateTimer()
+        if (self.call != nil && self.call!.state != Call.State.End){
+            /* terminate the call */
+            print("Terminating the call...\n")
+            do {
+                try self.call?.terminate()
+            } catch {
+                print(error)
+            }
+        }
+        
+        self.lc.removeDelegate(delegate: self.coreManager2)
+        self.lc.stop()
+        end()
+    }
+    
+    
+    
     
     fileprivate func setTimer(){
         type(of: self).iterateTimer = Timer.scheduledTimer (
             timeInterval: 0.02, target: self, selector: #selector(iterate), userInfo: nil, repeats: true)
     }
 }
-
-
 class LinphoneCoreManager: CoreDelegate {
     override func onRegistrationStateChanged(lc: Core, cfg: ProxyConfig, cstate: RegistrationState, message: String?) {
         print("New registration state \(cstate) for user id \( String(describing: cfg.identityAddress?.asString()))\n")
+        switch cstate{
+        case .None:
+                   print("registrationStateChanged -> LinphoneRegistrationNone -> \(message)")
+            LinphoneManager.shared.dispatch(message: "RegistrationState.None")
+        case .Progress:
+                   print("registrationStateChanged -> LinphoneRegistrationProgress -> \(message)")
+            LinphoneManager.shared.dispatch(message: "RegistrationState.Progress")
+        case .Ok:
+                   print("registrationStateChanged -> LinphoneRegistrationOk -> \(message)")
+            LinphoneManager.shared.dispatch(message: "RegistrationState.Ok")
+        case .Cleared:
+                   print("registrationStateChanged -> LinphoneRegistrationCleared -> \(message)")
+            LinphoneManager.shared.dispatch(message: "RegistrationState.Cleared")
+        case .Failed:
+                   print("registrationStateChanged -> LinphoneRegistrationFailed -> \(message)")
+            LinphoneManager.shared.dispatch(message: "RegistrationState.Failed")
+               default:
+                   return
+               }
+
     }
 }
-
 
 class LinphoneLoggingServiceManager: LoggingServiceDelegate {
     override func onLogMessageWritten(logService: LoggingService, domain: String, lev: LogLevel, message: String) {
@@ -466,23 +266,99 @@ class LinphoneLoggingServiceManager: LoggingServiceDelegate {
 
 class LinphoneCoreManager2: CoreDelegate {
     override func onCallStateChanged(lc: Core, call: Call, cstate: Call.State, message: String) {
-        switch cstate {
-        case .OutgoingRinging:
-            print("It is now ringing remotely !\n")
-        case .OutgoingEarlyMedia:
-            print("Receiving some early media\n")
-        case .Connected:
-            print("We are connected !\n")
-        case .StreamsRunning:
-            print("Media streams established !\n")
-        case .End:
-            print("Call is terminated.\n")
-        case .Error:
-            print("Call failure !")
-        default:
-            print("Unhandled notification \(cstate)\n")
-        }
+//        switch cstate {
+//        case .OutgoingRinging:
+//            print("It is now ringing remotely !\n")
+//            LinphoneManager.shared.dispatch(message: "It is now ringing remotely !\n")
+//        case .OutgoingEarlyMedia:
+//            print("Receiving some early media\n")
+//            LinphoneManager.shared.dispatch(message: "OutgoingEarlyMedia")
+//        case .Connected:
+//            print("We are connected !\n")
+//        case .StreamsRunning:
+//            print("Media streams established !\n")
+//        case .End:
+//            print("Call is terminated.\n")
+//        case .Error:
+//            LinphoneManager.shared.dispatch(message: "Error")
+//            print("Call failure !")
+//        default:
+//            print("Unhandled notification \(cstate)\n")
+//        }
+        
+        var stateMessage = message
+                switch cstate {
+                case .Idle:
+                    print("callStateChanged -> .Idle -> \(stateMessage)")
+                LinphoneManager.shared.dispatch(message: "Call.State.Idle")
+                case .IncomingReceived:
+                    print("callStateChanged -> .IncomingReceived -> \(stateMessage)")
+//                    currentCall = call
+        //            ms_usleep(3 * 1000 * 1000); // Wait 3 seconds to pickup
+        //            linphone_call_accept(call)
+                    LinphoneManager.shared.dispatch(message: "Call.State.IncomingReceived")
+                  
+                LinphoneManager.shared.dispatch(message: "Call.State.IncomingReceived")
+                case .OutgoingInit:
+                    print("callStateChanged -> .OutgoingInit -> \(stateMessage)")
+                LinphoneManager.shared.dispatch(message: "Call.State.OutgoingInit")
+                case .OutgoingProgress:
+                    print("callStateChanged -> .OutgoingProgress -> \(stateMessage)")
+                LinphoneManager.shared.dispatch(message: "Call.State.OutgoingProgress")
+                case .OutgoingRinging:
+                    print("callStateChanged -> .OutgoingRinging -> \(stateMessage)")
+                LinphoneManager.shared.dispatch(message: "Call.State.OutgoingRinging")
+                case .OutgoingEarlyMedia:
+                    print("callStateChanged -> .OutgoingEarlyMedia -> \(stateMessage)")
+                LinphoneManager.shared.dispatch(message: "Call.State.OutgoingEarlyMedia")
+                case .Connected:
+                    print("callStateChanged -> .Connected -> \(stateMessage)")
+                LinphoneManager.shared.dispatch(message: "Call.State.Connected")
+                case .StreamsRunning:
+                    print("callStateChanged -> .StreamsRunning -> \(stateMessage)")
+                LinphoneManager.shared.dispatch(message: "Call.State.StreamsRunning")
+                case .Pausing:
+                    print("callStateChanged -> .Pausing -> \(stateMessage)")
+                LinphoneManager.shared.dispatch(message: "Call.State.Pausing")
+                case .Paused:
+                    print("callStateChanged -> .Paused -> \(stateMessage)")
+                LinphoneManager.shared.dispatch(message: "Call.State.Paused")
+                case .Resuming:
+                    print("callStateChanged -> .Resuming -> \(stateMessage)")
+                LinphoneManager.shared.dispatch(message: "Call.State.Resuming")
+                case .Referred:
+                    print("callStateChanged -> .Referred -> \(stateMessage)")
+                LinphoneManager.shared.dispatch(message: "Call.State.Referred")
+                case .Error:
+                    print("callStateChanged -> .Error -> \(stateMessage)")
+                LinphoneManager.shared.dispatch(message: "Call.State.Error")
+                case .End:
+                    print("callStateChanged -> .End -> \(stateMessage)")
+                LinphoneManager.shared.dispatch(message: "Call.State.End")
+                case .PausedByRemote:
+                    print("callStateChanged -> .PausedByRemote -> \(stateMessage)")
+                LinphoneManager.shared.dispatch(message: "Call.State.PausedByRemote")
+                case .UpdatedByRemote:
+                    print("callStateChanged -> .UpdatedByRemote -> \(stateMessage)")
+                LinphoneManager.shared.dispatch(message: "Call.State.UpdatedByRemote")
+                case .IncomingEarlyMedia:
+                    print("callStateChanged -> .IncomingEarlyMedia -> \(stateMessage)")
+                LinphoneManager.shared.dispatch(message: "Call.State.IncomingEarlyMedia")
+                case .Updating:
+                    print("callStateChanged -> .Updating -> \(stateMessage)")
+                LinphoneManager.shared.dispatch(message: "Call.State.Updating")
+                case .Released:
+                    print("callStateChanged -> .Released -> \(stateMessage)")
+                LinphoneManager.shared.dispatch(message: "Call.State.Released")
+                case .EarlyUpdatedByRemote:
+                    print("callStateChanged -> .EarlyUpdatedByRemote -> \(stateMessage)")
+                LinphoneManager.shared.dispatch(message: "Call.State.EarlyUpdatedByRemote")
+                case .EarlyUpdating:
+                    print("callStateChanged -> .EarlyUpdating -> \(stateMessage)")
+                LinphoneManager.shared.dispatch(message: "Call.State.EarlyUpdating")
+                default:
+                    return
+                }
+
     }
-    
-    
 }

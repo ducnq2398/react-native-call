@@ -4,57 +4,66 @@ import Foundation
 @objc(SipCall)
 class SipCall : RCTEventEmitter {
     
-  
-  override func supportedEvents() -> [String]! {
-      return ["SipCall"]
+    
+    @objc override static func requiresMainQueueSetup() -> Bool {
+        return true
     }
-
-
-  
-  @objc func initialize() {
-    DispatchQueue.main.async {
-      LinphoneManager.shared.registerEventEmitter(eventEmitter: self)
-      LinphoneManager.shared.initialize()
-//      LinphoneManager.shared.demo()
-//      self.sendEvent(withName: "SipCall", body: "Init")
+    
+    override func supportedEvents() -> [String]! {
+        return ["SipCall"]
     }
-  }
-  
- 
-  
-  // Reference to use main thread
-  @objc func login(_ options: NSDictionary) -> Void {
-    DispatchQueue.main.async {
-        let username = options["username"] as! String
-        let password = options["password"] as! String
-        let domain = options["domain"] as! String
-
-      LinphoneManager.shared.login(username: username, password: password, domain: domain)
+    
+    
+    
+    @objc func initialize() {
+        DispatchQueue.main.async {
+            LinphoneManager.shared.registerEventEmitter(eventEmitter: self)
+            LinphoneManager.shared.initialize()
+        }
     }
-  }
-
-
-  
-  @objc func logout() -> Void {
-    DispatchQueue.main.async {
-      LinphoneManager.shared.logout()
+    
+//    @objc func setup() {
+//        DispatchQueue.main.async {
+//            LinphoneManager.shared.registerEventEmitter(eventEmitter: self)
+//            LinphoneManager.shared.initialize()
+//        }
+//    }
+//
+    
+    // Reference to use main thread
+    @objc func login(_ options: NSDictionary) -> Void {
+        print("login")
+        DispatchQueue.main.async {
+            let username = options["username"] as! String
+            let password = options["password"] as! String
+            let domain = options["domain"] as! String
+            
+            LinphoneManager.shared.login(username: username, password: password, domain: domain)
+        }
     }
-  }
-  
-  @objc func call(_ options: NSDictionary) -> Void {
-    DispatchQueue.main.async {
-        let phoneNumber = options["phoneNumber"] as! String
-        let callId = options["callId"] as! String
-        let userId = options["userId"] as! String
-      LinphoneManager.shared.call(phone_number: phoneNumber, user_id: userId, call_id: callId)
+    
+    
+    
+    @objc func logout() -> Void {
+        DispatchQueue.main.async {
+            LinphoneManager.shared.logout()
+        }
     }
-  }
-  
-  
-  @objc func endCall() -> Void {
-    DispatchQueue.main.async {
-      LinphoneManager.shared.endCall()
+    
+    @objc func call(_ options: NSDictionary) -> Void {
+        DispatchQueue.main.async {
+            let phoneNumber = options["phoneNumber"] as! String
+            let callId = options["callId"] as! String
+            let userId = options["userId"] as! String
+            LinphoneManager.shared.call(phone_number: phoneNumber, user_id: userId, call_id: callId)
+        }
     }
-  }
-  
+    
+    
+    @objc func endCall() -> Void {
+        DispatchQueue.main.async {
+            LinphoneManager.shared.endCall()
+        }
+    }
+    
 }

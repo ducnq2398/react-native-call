@@ -221,7 +221,7 @@ class SipCall constructor(reactContext: ReactApplicationContext) {
 
 
 
-    fun login(username: String, password: String, domain: String) {
+    fun login(username: String?, password: String, domain: String) {
         Log.e("username", username)
         Log.e("password", password)
         Log.e("domain", domain)
