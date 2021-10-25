@@ -38,7 +38,9 @@ class SipCall constructor(reactContext: ReactApplicationContext) {
 
 
     fun init(context: Context){
-        mCore?.start()
+      mCore = Factory.instance().createCore("", "", context)
+
+
         val lTask = object : TimerTask() {
             override fun run() {
                 Handler(Looper.getMainLooper()).post {
@@ -173,9 +175,9 @@ class SipCall constructor(reactContext: ReactApplicationContext) {
 
         }
 
-        mCore = Factory.instance().createCore("", "", context)
 
         mCore?.addListener(mCoreListener)
+        mCore?.start()
         configureCore(context)
     }
 
