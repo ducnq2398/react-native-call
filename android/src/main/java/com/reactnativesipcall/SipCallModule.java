@@ -10,12 +10,14 @@ import com.facebook.react.bridge.ReactMethod;
  * Expose Java to JavaScript. Methods annotated with {@link ReactMethod} are exposed.
  */
 public class SipCallModule extends ReactContextBaseJavaModule {
-    SipCall sipCall;
+    static SipCall sipCall = null;
 
     SipCallModule(ReactApplicationContext reactContext) {
         super(reactContext);
-        sipCall = new SipCall(reactContext);
-        sipCall.init(reactContext);
+        if(sipCall == null){
+          sipCall = new SipCall(reactContext);
+          sipCall.init(reactContext);
+        }
     }
 
     /**

@@ -57,7 +57,6 @@ class SipCall constructor(reactContext: ReactApplicationContext) {
         dumDeviceInformation()
         mHandler = Handler(Looper.getMainLooper())
         mCoreListener = object : CoreListenerStub() {
-
             override fun onCallStateChanged(lc: Core, call: Call, cstate: Call.State?, message: String) {
                 super.onCallStateChanged(lc, call, cstate, message)
                 when (cstate) {
